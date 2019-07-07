@@ -8,7 +8,7 @@ make
 
 ### run
 ```
-srimage -f {path to image file} -o {path of output}
+srimage -f {path to image file} -o {path of output} -w {path to workdir}
 ```
 
 ### test
