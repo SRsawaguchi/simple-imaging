@@ -8,11 +8,13 @@ import (
 	"path/filepath"
 
 	"github.com/SRsawaguchi/srimage/imaging"
+	"github.com/SRsawaguchi/srimage/interactor"
 )
 
 var (
 	filePath = flag.String("f", "", "path to target image file.")
 	destPath = flag.String("o", "", "for result image path.")
+	workdir  = flag.String("w", "", "work directory")
 )
 
 func main() {
@@ -36,26 +38,37 @@ func run() error {
 		return nil
 	}
 
-	fmt.Println(*filePath)
 	if *destPath == "" {
 		*destPath = fmt.Sprintf("out%s", filepath.Ext(*filePath))
 	}
 
-	file, err := os.Open(*filePath)
-	if err != nil {
-		fmt.Println(err.Error())
+	if *workdir == "" {
+		*workdir = os.Getenv("SRIMAGE_WORKDIR")
+		if *workdir == "" {
+			*workdir = "./workspace"
+			if err := os.Mkdir(*workdir, 0777); err != nil {
+				return err
+			}
+		}
 	}
-	defer file.Close()
 
-	dstfile, err := os.Create(*destPath)
+	interactor := interactor.NewInteractor(
+		nil,
+		nil,
+		*workdir,
+		*filePath,
+	)
+
+	result, err := interactor.Execute()
 	if err != nil {
 		return err
 	}
-	defer dstfile.Close()
 
-	if err := imaging.ToGrayScale(file, dstfile); err != nil {
-		fmt.Println(err.Error())
+	if err = os.Rename(result.ResultImageLocalPath, *destPath); err != nil {
+		return err
 	}
+
+	interactor.Clean()
 
 	return nil
 }
